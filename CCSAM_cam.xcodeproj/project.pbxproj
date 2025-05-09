@@ -1,0 +1,563 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		64ACA7C82DCDF2B70059E498 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 64ACA7B22DCDF2B40059E498 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 64ACA7B92DCDF2B40059E498;
+			remoteInfo = CCSAM_cam;
+		};
+		64ACA7D22DCDF2B70059E498 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 64ACA7B22DCDF2B40059E498 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 64ACA7B92DCDF2B40059E498;
+			remoteInfo = CCSAM_cam;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		64ACA7BA2DCDF2B40059E498 /* CCSAM_cam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CCSAM_cam.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		64ACA7C72DCDF2B70059E498 /* CCSAM_camTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CCSAM_camTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		64ACA7D12DCDF2B70059E498 /* CCSAM_camUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CCSAM_camUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		64ACA7BC2DCDF2B40059E498 /* CCSAM_cam */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CCSAM_cam;
+			sourceTree = "<group>";
+		};
+		64ACA7CA2DCDF2B70059E498 /* CCSAM_camTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CCSAM_camTests;
+			sourceTree = "<group>";
+		};
+		64ACA7D42DCDF2B70059E498 /* CCSAM_camUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CCSAM_camUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		64ACA7B72DCDF2B40059E498 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		64ACA7C42DCDF2B70059E498 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		64ACA7CE2DCDF2B70059E498 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		64ACA7B12DCDF2B40059E498 = {
+			isa = PBXGroup;
+			children = (
+				64ACA7BC2DCDF2B40059E498 /* CCSAM_cam */,
+				64ACA7CA2DCDF2B70059E498 /* CCSAM_camTests */,
+				64ACA7D42DCDF2B70059E498 /* CCSAM_camUITests */,
+				64ACA7BB2DCDF2B40059E498 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		64ACA7BB2DCDF2B40059E498 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				64ACA7BA2DCDF2B40059E498 /* CCSAM_cam.app */,
+				64ACA7C72DCDF2B70059E498 /* CCSAM_camTests.xctest */,
+				64ACA7D12DCDF2B70059E498 /* CCSAM_camUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		64ACA7B92DCDF2B40059E498 /* CCSAM_cam */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 64ACA7DB2DCDF2B70059E498 /* Build configuration list for PBXNativeTarget "CCSAM_cam" */;
+			buildPhases = (
+				64ACA7B62DCDF2B40059E498 /* Sources */,
+				64ACA7B72DCDF2B40059E498 /* Frameworks */,
+				64ACA7B82DCDF2B40059E498 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				64ACA7BC2DCDF2B40059E498 /* CCSAM_cam */,
+			);
+			name = CCSAM_cam;
+			packageProductDependencies = (
+			);
+			productName = CCSAM_cam;
+			productReference = 64ACA7BA2DCDF2B40059E498 /* CCSAM_cam.app */;
+			productType = "com.apple.product-type.application";
+		};
+		64ACA7C62DCDF2B70059E498 /* CCSAM_camTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 64ACA7DE2DCDF2B70059E498 /* Build configuration list for PBXNativeTarget "CCSAM_camTests" */;
+			buildPhases = (
+				64ACA7C32DCDF2B70059E498 /* Sources */,
+				64ACA7C42DCDF2B70059E498 /* Frameworks */,
+				64ACA7C52DCDF2B70059E498 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				64ACA7C92DCDF2B70059E498 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				64ACA7CA2DCDF2B70059E498 /* CCSAM_camTests */,
+			);
+			name = CCSAM_camTests;
+			packageProductDependencies = (
+			);
+			productName = CCSAM_camTests;
+			productReference = 64ACA7C72DCDF2B70059E498 /* CCSAM_camTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		64ACA7D02DCDF2B70059E498 /* CCSAM_camUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 64ACA7E12DCDF2B70059E498 /* Build configuration list for PBXNativeTarget "CCSAM_camUITests" */;
+			buildPhases = (
+				64ACA7CD2DCDF2B70059E498 /* Sources */,
+				64ACA7CE2DCDF2B70059E498 /* Frameworks */,
+				64ACA7CF2DCDF2B70059E498 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				64ACA7D32DCDF2B70059E498 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				64ACA7D42DCDF2B70059E498 /* CCSAM_camUITests */,
+			);
+			name = CCSAM_camUITests;
+			packageProductDependencies = (
+			);
+			productName = CCSAM_camUITests;
+			productReference = 64ACA7D12DCDF2B70059E498 /* CCSAM_camUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		64ACA7B22DCDF2B40059E498 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1630;
+				LastUpgradeCheck = 1630;
+				TargetAttributes = {
+					64ACA7B92DCDF2B40059E498 = {
+						CreatedOnToolsVersion = 16.3;
+					};
+					64ACA7C62DCDF2B70059E498 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = 64ACA7B92DCDF2B40059E498;
+					};
+					64ACA7D02DCDF2B70059E498 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = 64ACA7B92DCDF2B40059E498;
+					};
+				};
+			};
+			buildConfigurationList = 64ACA7B52DCDF2B40059E498 /* Build configuration list for PBXProject "CCSAM_cam" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 64ACA7B12DCDF2B40059E498;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 64ACA7BB2DCDF2B40059E498 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				64ACA7B92DCDF2B40059E498 /* CCSAM_cam */,
+				64ACA7C62DCDF2B70059E498 /* CCSAM_camTests */,
+				64ACA7D02DCDF2B70059E498 /* CCSAM_camUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		64ACA7B82DCDF2B40059E498 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		64ACA7C52DCDF2B70059E498 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		64ACA7CF2DCDF2B70059E498 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		64ACA7B62DCDF2B40059E498 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		64ACA7C32DCDF2B70059E498 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		64ACA7CD2DCDF2B70059E498 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		64ACA7C92DCDF2B70059E498 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 64ACA7B92DCDF2B40059E498 /* CCSAM_cam */;
+			targetProxy = 64ACA7C82DCDF2B70059E498 /* PBXContainerItemProxy */;
+		};
+		64ACA7D32DCDF2B70059E498 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 64ACA7B92DCDF2B40059E498 /* CCSAM_cam */;
+			targetProxy = 64ACA7D22DCDF2B70059E498 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		64ACA7D92DCDF2B70059E498 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 289723G7NC;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		64ACA7DA2DCDF2B70059E498 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 289723G7NC;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		64ACA7DC2DCDF2B70059E498 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 289723G7NC;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "tikhonov.CCSAM-cam";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		64ACA7DD2DCDF2B70059E498 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 289723G7NC;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "tikhonov.CCSAM-cam";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		64ACA7DF2DCDF2B70059E498 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 289723G7NC;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "tikhonov.CCSAM-camTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CCSAM_cam.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CCSAM_cam";
+			};
+			name = Debug;
+		};
+		64ACA7E02DCDF2B70059E498 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 289723G7NC;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "tikhonov.CCSAM-camTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CCSAM_cam.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CCSAM_cam";
+			};
+			name = Release;
+		};
+		64ACA7E22DCDF2B70059E498 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 289723G7NC;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "tikhonov.CCSAM-camUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CCSAM_cam;
+			};
+			name = Debug;
+		};
+		64ACA7E32DCDF2B70059E498 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 289723G7NC;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "tikhonov.CCSAM-camUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CCSAM_cam;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		64ACA7B52DCDF2B40059E498 /* Build configuration list for PBXProject "CCSAM_cam" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				64ACA7D92DCDF2B70059E498 /* Debug */,
+				64ACA7DA2DCDF2B70059E498 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		64ACA7DB2DCDF2B70059E498 /* Build configuration list for PBXNativeTarget "CCSAM_cam" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				64ACA7DC2DCDF2B70059E498 /* Debug */,
+				64ACA7DD2DCDF2B70059E498 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		64ACA7DE2DCDF2B70059E498 /* Build configuration list for PBXNativeTarget "CCSAM_camTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				64ACA7DF2DCDF2B70059E498 /* Debug */,
+				64ACA7E02DCDF2B70059E498 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		64ACA7E12DCDF2B70059E498 /* Build configuration list for PBXNativeTarget "CCSAM_camUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				64ACA7E22DCDF2B70059E498 /* Debug */,
+				64ACA7E32DCDF2B70059E498 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 64ACA7B22DCDF2B40059E498 /* Project object */;
+}
