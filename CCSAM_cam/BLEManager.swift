@@ -9,6 +9,7 @@ import Foundation
 import CoreBluetooth
 import Combine
 import AVFoundation
+import UIKit
 
 class BLEManager: NSObject, ObservableObject {
     // MARK: - Published Properties
@@ -21,6 +22,7 @@ class BLEManager: NSObject, ObservableObject {
     @Published var receiveInProgress = false
     @Published var rt60Value: Double? = nil
     @Published var wavFileURL: URL? = nil
+    @Published var snapshotImage: UIImage? = nil
     
     // MARK: - Дополнительные публикуемые свойства
     @Published var earlyDecayTime: Double? = nil // EDT
@@ -32,12 +34,21 @@ class BLEManager: NSObject, ObservableObject {
     
     // MARK: - BLE Properties
     private var centralManager: CBCentralManager!
-    private var serviceUUID = CBUUID(string: "1815") // Example service UUID for acoustic camera
-    private var controlCharacteristicUUID = CBUUID(string: "2A56") // Example characteristic UUID for control
-    private var dataCharacteristicUUID = CBUUID(string: "2A58") // Example characteristic UUID for data
+    private var serviceUUID = CBUUID(string: "12345678-1234-1234-1234-1234567890AB") // Example service UUID for acoustic camera
+    private var controlCharacteristicUUID = CBUUID(string: "12345678-1234-1234-1234-1234567890AC") // Example characteristic UUID for control
+    private var dataCharacteristicUUID = CBUUID(string: "12345678-1234-1234-1234-1234567890AD") // Example characteristic UUID for data
     
     private var controlCharacteristic: CBCharacteristic?
     private var dataCharacteristic: CBCharacteristic?
+    
+    // Буфер для приема изображений
+    private var imageDataBuffer = Data()
+    private var expectedImageSize: Int = 0
+    private var receivingImageData = false
+    private var imageWidth: Int = 0
+    private var imageHeight: Int = 0
+    private var isHeaderReceived = false
+    private var isJPEGMode = false
     
     // Command codes
     private let CMD_RIR_MODE: UInt8 = 0x10
@@ -110,10 +121,17 @@ class BLEManager: NSObject, ObservableObject {
             return
         }
         
-        let commandData = Data([CMD_SNAPSHOT_MODE])
+        // Отправляем команду "SNAPSHOT" с переводом строки
+        let commandData = "SNAPSHOT".data(using: .utf8)!
         peripheral.writeValue(commandData, for: characteristic, type: .withResponse)
         statusMessage = "Starting snapshot mode..."
         receiveInProgress = true
+        
+        // Очищаем буфер и готовимся к приему изображения
+        imageDataBuffer = Data()
+        receivingImageData = true
+        isHeaderReceived = false
+        expectedImageSize = 0
     }
     
     // MARK: - Audio Recording Methods
@@ -293,6 +311,195 @@ class BLEManager: NSObject, ObservableObject {
         let midFreq = (frequencyRT60["500 Hz"] ?? rt60) + (frequencyRT60["1000 Hz"] ?? rt60)
         
         bassRatio = lowFreq / midFreq
+    }
+    
+    // Обработка данных, полученных по BLE
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        if let error = error {
+            statusMessage = "Error reading characteristic value: \(error.localizedDescription)"
+            return
+        }
+        
+        guard let data = characteristic.value, !data.isEmpty else {
+            statusMessage = "Received empty data packet"
+            return
+        }
+        
+        if characteristic.uuid == dataCharacteristicUUID {
+            if receivingImageData {
+                // Обрабатываем данные изображения
+                processImageData(data)
+            } else {
+                // Обрабатываем данные импульсного отклика
+                parseImpulseResponseData(data)
+            }
+        }
+    }
+    
+    // Обработка данных изображения
+    private func processImageData(_ data: Data) {
+        // Если это первый пакет и заголовок еще не получен
+        if !isHeaderReceived {
+            if let headerString = String(data: data, encoding: .utf8) {
+                statusMessage = "Получен заголовок: \(headerString)"
+                
+                if headerString.hasPrefix("RAW:") {
+                    // Парсим размеры изображения из формата "RAW:W,H"
+                    let headerContent = headerString.dropFirst(4)
+                    let headerParts = headerContent.components(separatedBy: ",")
+                    
+                    if headerParts.count >= 2, 
+                       let width = Int(headerParts[0].trimmingCharacters(in: .whitespaces)),
+                       let height = Int(headerParts[1].trimmingCharacters(in: .whitespacesAndNewlines)) {
+                        
+                        imageWidth = width
+                        imageHeight = height
+                        expectedImageSize = width * height * 2 // RGB565 = 2 байта на пиксель
+                        isHeaderReceived = true
+                        isJPEGMode = false
+                        
+                        statusMessage = "Начало приема RAW изображения: \(width)x\(height), ожидается \(expectedImageSize) байт"
+                    } else {
+                        statusMessage = "Ошибка в формате RAW-заголовка: \(headerString)"
+                    }
+                    return
+                } else if headerString.hasPrefix("SIZE:") {
+                    // Парсим размер JPEG изображения
+                    if let sizeValue = Int(headerString.dropFirst(5).trimmingCharacters(in: .whitespacesAndNewlines)) {
+                        expectedImageSize = sizeValue
+                        isHeaderReceived = true
+                        isJPEGMode = true
+                        
+                        statusMessage = "Начало приема JPEG изображения: ожидается \(expectedImageSize) байт"
+                    } else {
+                        statusMessage = "Ошибка в формате JPEG-заголовка: \(headerString)"
+                    }
+                    return
+                } else {
+                    statusMessage = "Неизвестный формат заголовка: \(headerString)"
+                    return
+                }
+            }
+        }
+        
+        // Если уже получили заголовок, добавляем бинарные данные в буфер
+        if isHeaderReceived {
+            imageDataBuffer.append(data)
+            
+            // Отображаем прогресс
+            let progress = Float(imageDataBuffer.count) / Float(expectedImageSize) * 100
+            statusMessage = "Прием изображения: \(Int(progress))% (\(imageDataBuffer.count)/\(expectedImageSize) байт)"
+            
+            // Если получили все данные
+            if imageDataBuffer.count >= expectedImageSize {
+                if isJPEGMode {
+                    constructImageFromJPEGData()
+                } else {
+                    constructImageFromRGB565Data()
+                }
+            }
+        }
+    }
+    
+    // Создание изображения из JPEG данных
+    private func constructImageFromJPEGData() {
+        guard isHeaderReceived && imageDataBuffer.count >= expectedImageSize else { 
+            statusMessage = "Недостаточно данных для создания JPEG изображения"
+            return 
+        }
+        
+        if let image = UIImage(data: imageDataBuffer) {
+            DispatchQueue.main.async {
+                self.snapshotImage = image
+                self.statusMessage = "JPEG изображение успешно получено (\(image.size.width)x\(image.size.height))"
+                self.resetImageReceivingState()
+            }
+        } else {
+            statusMessage = "Не удалось создать UIImage из полученных JPEG данных"
+            resetImageReceivingState()
+        }
+    }
+    
+    // Конвертирование RGB565 данных в UIImage
+    private func constructImageFromRGB565Data() {
+        guard isHeaderReceived && imageDataBuffer.count >= expectedImageSize else { 
+            statusMessage = "Недостаточно данных для создания RAW изображения"
+            return 
+        }
+        
+        // Создаем контекст для рисования
+        let bitsPerComponent = 8
+        let bytesPerPixel = 4
+        let bytesPerRow = imageWidth * bytesPerPixel
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
+        
+        guard let context = CGContext(
+            data: nil,
+            width: imageWidth,
+            height: imageHeight,
+            bitsPerComponent: bitsPerComponent,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo.rawValue
+        ) else {
+            statusMessage = "Не удалось создать контекст для изображения"
+            resetImageReceivingState()
+            return
+        }
+        
+        guard let buffer = context.data else {
+            statusMessage = "Не удалось получить буфер контекста"
+            resetImageReceivingState()
+            return
+        }
+        
+        // Конвертируем RGB565 в RGBA
+        let rgba = buffer.bindMemory(to: UInt32.self, capacity: imageWidth * imageHeight)
+        
+        for y in 0..<imageHeight {
+            for x in 0..<imageWidth {
+                let pixelIndex = y * imageWidth + x
+                let byteIndex = pixelIndex * 2 // 2 байта на пиксель в RGB565
+                
+                if byteIndex + 1 < imageDataBuffer.count {
+                    // Считываем 2 байта для RGB565
+                    let byte1 = imageDataBuffer[byteIndex]
+                    let byte2 = imageDataBuffer[byteIndex + 1]
+                    
+                    // Распаковываем RGB565 в компоненты (little-endian)
+                    let rgb565 = UInt16(byte1) | (UInt16(byte2) << 8)
+                    
+                    // Извлекаем компоненты RGB из RGB565
+                    let r = UInt8((rgb565 & 0xF800) >> 11) << 3  // 5 бит для R (биты 11-15)
+                    let g = UInt8((rgb565 & 0x07E0) >> 5) << 2   // 6 бит для G (биты 5-10)
+                    let b = UInt8((rgb565 & 0x001F)) << 3        // 5 бит для B (биты 0-4)
+                    
+                    // Собираем RGBA (порядок компонентов зависит от bitmapInfo)
+                    let argb: UInt32 = (UInt32(255) << 24) | (UInt32(r) << 16) | (UInt32(g) << 8) | UInt32(b)
+                    rgba[pixelIndex] = argb
+                }
+            }
+        }
+        
+        if let cgImage = context.makeImage() {
+            DispatchQueue.main.async {
+                self.snapshotImage = UIImage(cgImage: cgImage)
+                self.statusMessage = "RGB565 изображение успешно получено (\(self.imageWidth)x\(self.imageHeight))"
+                self.resetImageReceivingState()
+            }
+        } else {
+            statusMessage = "Не удалось создать UIImage из RGB565 данных"
+            resetImageReceivingState()
+        }
+    }
+    
+    // Сброс состояния приема изображения
+    private func resetImageReceivingState() {
+        receiveInProgress = false
+        receivingImageData = false
+        imageDataBuffer = Data()
+        isHeaderReceived = false
     }
     
     // Helper to parse impulse response data from raw BLE data
@@ -475,17 +682,6 @@ extension BLEManager: CBPeripheralDelegate {
                 peripheral.setNotifyValue(true, for: characteristic)
                 statusMessage = "Found data characteristic and enabled notifications"
             }
-        }
-    }
-    
-    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        if let error = error {
-            statusMessage = "Error reading characteristic value: \(error.localizedDescription)"
-            return
-        }
-        
-        if characteristic.uuid == dataCharacteristicUUID, let data = characteristic.value {
-            parseImpulseResponseData(data)
         }
     }
     

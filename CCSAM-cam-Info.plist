@@ -8,5 +8,14 @@
 	<array>
 		<dict/>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Приложению требуется доступ к камере для сканирования помещения</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Приложению требуется доступ к фотогалерее для сохранения результатов сканирования</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
 </dict>
 </plist>

@@ -27,24 +27,12 @@
 		64ACA7BA2DCDF2B40059E498 /* CCSAM_cam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CCSAM_cam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		64ACA7C72DCDF2B70059E498 /* CCSAM_camTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CCSAM_camTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		64ACA7D12DCDF2B70059E498 /* CCSAM_camUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CCSAM_camUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		64DDC3242DCFB1A60014B3E8 /* RoomPlan.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RoomPlan.framework; path = ../../../../../../Library/Developer/CommandLineTools/SDKs/MacOSX14.5.sdk/System/iOSSupport/System/Library/Frameworks/RoomPlan.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		64ACA7F02DCDF5320059E498 /* Exceptions for "CCSAM_cam" folder in "CCSAM_cam" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"CCSAM-cam-Info.plist",
-			);
-			target = 64ACA7B92DCDF2B40059E498 /* CCSAM_cam */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		64ACA7BC2DCDF2B40059E498 /* CCSAM_cam */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				64ACA7F02DCDF5320059E498 /* Exceptions for "CCSAM_cam" folder in "CCSAM_cam" target */,
-			);
 			path = CCSAM_cam;
 			sourceTree = "<group>";
 		};
@@ -91,6 +79,7 @@
 				64ACA7BC2DCDF2B40059E498 /* CCSAM_cam */,
 				64ACA7CA2DCDF2B70059E498 /* CCSAM_camTests */,
 				64ACA7D42DCDF2B70059E498 /* CCSAM_camUITests */,
+				64DDC3102DCFADDB0014B3E8 /* Frameworks */,
 				64ACA7BB2DCDF2B40059E498 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -103,6 +92,14 @@
 				64ACA7D12DCDF2B70059E498 /* CCSAM_camUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		64DDC3102DCFADDB0014B3E8 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				64DDC3242DCFB1A60014B3E8 /* RoomPlan.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

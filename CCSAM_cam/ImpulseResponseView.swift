@@ -5,165 +5,239 @@ import AVFoundation
 struct ImpulseResponseView: View {
     @EnvironmentObject private var bleManager: BLEManager
     @State private var isRecording = false
+    @State private var selectedTab = 0
     
     var body: some View {
         NavigationView {
             VStack {
                 if !bleManager.isConnected {
                     NoDeviceConnectedView()
-                } else if bleManager.impulseResponseData.isEmpty {
-                    VStack(spacing: 20) {
-                        Image(systemName: "waveform")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
-                        
-                        Text("Нет данных")
-                            .font(.title)
-                            .fontWeight(.bold)
-                        
-                        Text("Запустите получение импульсного отклика из вкладки 'Управление'")
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.gray)
-                            .padding()
-                        
-                        // Recorder button
-                        RecordButton(isRecording: $isRecording, bleManager: bleManager)
-                    }
-                    .padding()
                 } else {
-                    // Display impulse response data
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 20) {
-                            Text("Импульсный отклик")
-                                .font(.headline)
-                                .padding(.horizontal)
-                            
-                            ImpulseResponseChart(data: bleManager.impulseResponseData)
-                                .frame(height: 300)
-                                .padding(.horizontal)
-                            
-                            Divider()
-                            
-                            // Acoustic parameters section
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Акустические параметры")
-                                    .font(.headline)
-                                    .padding(.horizontal)
+                    // Tab selector
+                    Picker("Выберите тип данных", selection: $selectedTab) {
+                        Text("Импульсный отклик").tag(0)
+                        Text("Акустический снимок").tag(1)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding()
+                    
+                    if selectedTab == 0 {
+                        // Импульсный отклик
+                        if bleManager.impulseResponseData.isEmpty {
+                            VStack(spacing: 20) {
+                                Image(systemName: "waveform")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.gray)
                                 
-                                // RT60 information
-                                if let rt60 = bleManager.rt60Value {
-                                    HStack {
-                                        Text("RT60:")
+                                Text("Нет данных")
+                                    .font(.title)
+                                    .fontWeight(.bold)
+                                
+                                Text("Запустите получение импульсного отклика из вкладки 'Управление'")
+                                    .multilineTextAlignment(.center)
+                                    .foregroundColor(.gray)
+                                    .padding()
+                                
+                                // Recorder button
+                                RecordButton(isRecording: $isRecording, bleManager: bleManager)
+                            }
+                            .padding()
+                        } else {
+                            // Display impulse response data
+                            ScrollView {
+                                VStack(alignment: .leading, spacing: 20) {
+                                    Text("Импульсный отклик")
+                                        .font(.headline)
+                                        .padding(.horizontal)
+                                    
+                                    ImpulseResponseChart(data: bleManager.impulseResponseData)
+                                        .frame(height: 300)
+                                        .padding(.horizontal)
+                                    
+                                    Divider()
+                                    
+                                    // Acoustic parameters section
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Акустические параметры")
                                             .font(.headline)
-                                        Text("\(String(format: "%.2f", rt60)) секунд")
-                                            .font(.headline)
-                                            .foregroundColor(.blue)
+                                            .padding(.horizontal)
                                         
-                                        Spacer()
-                                        
-                                        Button(action: {
-                                            // Recalculate RT60 if needed
-                                            if let url = bleManager.wavFileURL {
-                                                bleManager.calculateRT60(from: url)
+                                        // RT60 information
+                                        if let rt60 = bleManager.rt60Value {
+                                            HStack {
+                                                Text("RT60:")
+                                                    .font(.headline)
+                                                Text("\(String(format: "%.2f", rt60)) секунд")
+                                                    .font(.headline)
+                                                    .foregroundColor(.blue)
+                                                
+                                                Spacer()
+                                                
+                                                Button(action: {
+                                                    // Recalculate RT60 if needed
+                                                    if let url = bleManager.wavFileURL {
+                                                        bleManager.calculateRT60(from: url)
+                                                    }
+                                                }) {
+                                                    Image(systemName: "arrow.clockwise")
+                                                        .foregroundColor(.blue)
+                                                }
                                             }
-                                        }) {
-                                            Image(systemName: "arrow.clockwise")
-                                                .foregroundColor(.blue)
+                                            .padding(.horizontal)
+                                            
+                                            // EDT
+                                            if let edt = bleManager.earlyDecayTime {
+                                                HStack {
+                                                    Text("EDT:")
+                                                        .font(.subheadline)
+                                                    Text("\(String(format: "%.2f", edt)) секунд")
+                                                        .font(.subheadline)
+                                                        .foregroundColor(.blue)
+                                                }
+                                                .padding(.horizontal)
+                                            }
+                                            
+                                            // C50 и D50
+                                            if let clarity = bleManager.clarityFactor, 
+                                               let definition = bleManager.definitionFactor {
+                                                HStack {
+                                                    Text("C50: \(String(format: "%.1f", clarity)) дБ")
+                                                        .font(.subheadline)
+                                                    Spacer()
+                                                    Text("D50: \(String(format: "%.1f", definition * 100))%")
+                                                        .font(.subheadline)
+                                                }
+                                                .padding(.horizontal)
+                                            }
+                                            
+                                            // Центральное время
+                                            if let ts = bleManager.centralTime {
+                                                Text("Центральное время: \(String(format: "%.1f", ts * 1000)) мс")
+                                                    .font(.subheadline)
+                                                    .padding(.horizontal)
+                                            }
+                                            
+                                            // RT60 в разных частотных диапазонах
+                                            if !bleManager.frequencyRT60.isEmpty {
+                                                VStack(alignment: .leading) {
+                                                    Text("RT60 по частотам:")
+                                                        .font(.subheadline)
+                                                        .fontWeight(.bold)
+                                                        .padding(.top, 4)
+                                                    
+                                                    ForEach(bleManager.frequencyRT60.sorted(by: { $0.key < $1.key }), id: \.key) { freq, value in
+                                                        HStack {
+                                                            Text(freq)
+                                                                .font(.caption)
+                                                            Spacer()
+                                                            Text("\(String(format: "%.2f", value)) с")
+                                                                .font(.caption)
+                                                        }
+                                                    }
+                                                    
+                                                    // Отношение басов (BR)
+                                                    if let br = bleManager.bassRatio {
+                                                        HStack {
+                                                            Text("Bass Ratio:")
+                                                                .font(.caption)
+                                                                .fontWeight(.bold)
+                                                            Spacer()
+                                                            Text("\(String(format: "%.2f", br))")
+                                                                .font(.caption)
+                                                        }
+                                                        .padding(.top, 4)
+                                                    }
+                                                }
+                                                .padding(.horizontal)
+                                                .padding(.vertical, 4)
+                                                .background(Color.gray.opacity(0.1))
+                                                .cornerRadius(8)
+                                                .padding(.horizontal)
+                                            }
                                         }
+                                    }
+                                    
+                                    Divider()
+                                    
+                                    Text("Статистика данных")
+                                        .font(.headline)
+                                        .padding(.horizontal)
+                                    
+                                    DataStatisticsView(data: bleManager.impulseResponseData)
+                                        .padding(.horizontal)
+                                    
+                                    // Recorder button
+                                    RecordButton(isRecording: $isRecording, bleManager: bleManager)
+                                        .padding()
+                                }
+                                .padding(.vertical)
+                            }
+                        }
+                    } else {
+                        // Акустический снимок
+                        if let image = bleManager.snapshotImage {
+                            ScrollView {
+                                VStack(spacing: 20) {
+                                    Text("Акустический снимок")
+                                        .font(.headline)
+                                        .padding(.horizontal)
+                                    
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .cornerRadius(10)
+                                        .padding(.horizontal)
+                                    
+                                    Text("Время получения: \(Date().formatted(date: .abbreviated, time: .standard))")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                        .padding(.horizontal)
+                                    
+                                    // Кнопка для сохранения в галерею
+                                    Button(action: {
+                                        saveImageToGallery(image)
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "square.and.arrow.down")
+                                            Text("Сохранить в галерею")
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding()
+                                        .background(Color.blue)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(10)
                                     }
                                     .padding(.horizontal)
-                                    
-                                    // EDT
-                                    if let edt = bleManager.earlyDecayTime {
-                                        HStack {
-                                            Text("EDT:")
-                                                .font(.subheadline)
-                                            Text("\(String(format: "%.2f", edt)) секунд")
-                                                .font(.subheadline)
-                                                .foregroundColor(.blue)
-                                        }
-                                        .padding(.horizontal)
-                                    }
-                                    
-                                    // C50 и D50
-                                    if let clarity = bleManager.clarityFactor, 
-                                       let definition = bleManager.definitionFactor {
-                                        HStack {
-                                            Text("C50: \(String(format: "%.1f", clarity)) дБ")
-                                                .font(.subheadline)
-                                            Spacer()
-                                            Text("D50: \(String(format: "%.1f", definition * 100))%")
-                                                .font(.subheadline)
-                                        }
-                                        .padding(.horizontal)
-                                    }
-                                    
-                                    // Центральное время
-                                    if let ts = bleManager.centralTime {
-                                        Text("Центральное время: \(String(format: "%.1f", ts * 1000)) мс")
-                                            .font(.subheadline)
-                                            .padding(.horizontal)
-                                    }
-                                    
-                                    // RT60 в разных частотных диапазонах
-                                    if !bleManager.frequencyRT60.isEmpty {
-                                        VStack(alignment: .leading) {
-                                            Text("RT60 по частотам:")
-                                                .font(.subheadline)
-                                                .fontWeight(.bold)
-                                                .padding(.top, 4)
-                                            
-                                            ForEach(bleManager.frequencyRT60.sorted(by: { $0.key < $1.key }), id: \.key) { freq, value in
-                                                HStack {
-                                                    Text(freq)
-                                                        .font(.caption)
-                                                    Spacer()
-                                                    Text("\(String(format: "%.2f", value)) с")
-                                                        .font(.caption)
-                                                }
-                                            }
-                                            
-                                            // Отношение басов (BR)
-                                            if let br = bleManager.bassRatio {
-                                                HStack {
-                                                    Text("Bass Ratio:")
-                                                        .font(.caption)
-                                                        .fontWeight(.bold)
-                                                    Spacer()
-                                                    Text("\(String(format: "%.2f", br))")
-                                                        .font(.caption)
-                                                }
-                                                .padding(.top, 4)
-                                            }
-                                        }
-                                        .padding(.horizontal)
-                                        .padding(.vertical, 4)
-                                        .background(Color.gray.opacity(0.1))
-                                        .cornerRadius(8)
-                                        .padding(.horizontal)
-                                    }
                                 }
+                                .padding(.vertical)
                             }
-                            
-                            Divider()
-                            
-                            Text("Статистика данных")
-                                .font(.headline)
-                                .padding(.horizontal)
-                            
-                            DataStatisticsView(data: bleManager.impulseResponseData)
-                                .padding(.horizontal)
-                            
-                            // Recorder button
-                            RecordButton(isRecording: $isRecording, bleManager: bleManager)
-                                .padding()
+                        } else {
+                            VStack(spacing: 20) {
+                                Image(systemName: "camera")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.gray)
+                                
+                                Text("Нет акустического снимка")
+                                    .font(.title)
+                                    .fontWeight(.bold)
+                                
+                                Text("Нажмите 'Создать акустический снимок' в разделе 'Управление'")
+                                    .multilineTextAlignment(.center)
+                                    .foregroundColor(.gray)
+                                    .padding()
+                            }
+                            .padding()
                         }
-                        .padding(.vertical)
                     }
                 }
             }
-            .navigationTitle("Импульсный отклик")
+            .navigationTitle(selectedTab == 0 ? "Импульсный отклик" : "Акустический снимок")
         }
+    }
+    
+    // Функция для сохранения изображения в галерею
+    private func saveImageToGallery(_ image: UIImage) {
+        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
     }
 }
 

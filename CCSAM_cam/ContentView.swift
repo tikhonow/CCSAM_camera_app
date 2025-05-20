@@ -29,9 +29,21 @@ struct ContentView: View {
                     Label("Results", systemImage: "waveform")
                 }
                 .tag(2)
+            
+            RoomScanView()
+                .tabItem {
+                    Label("Room", systemImage: "house")
+                }
+                .tag(3)
+            
+            LearnView()
+                .tabItem {
+                    Label("Обучение", systemImage: "book.fill")
+                }
+                .tag(4)
         }
         .onChange(of: selectedTab) { newValue in
-            if newValue > 0 && !bleManager.isConnected {
+            if newValue == 1 && !bleManager.isConnected {
                 selectedTab = 0
             }
         }
