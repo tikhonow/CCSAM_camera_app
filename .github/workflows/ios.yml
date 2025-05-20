@@ -9,15 +9,11 @@ on:
 jobs:
   build:
     name: Build and Test default scheme using any available iPhone simulator
-    runs-on: macos-latest
+    runs-on: macos-14
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup exact Xcode  
-        uses: maxim-lobanov/setup-xcode-version@v1.6.0  
-        with:
-          xcode-version: "16.2"
       - name: Set Default Scheme
         run: |
           scheme_list=$(xcodebuild -list -json | tr -d "\n")
