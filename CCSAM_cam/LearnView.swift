@@ -3,8 +3,6 @@ import SwiftUI
 struct LearnView: View {
     @StateObject private var articleStore = ArticleStore()
     @State private var selectedCategory: String? = nil
-    @State private var selectedArticle: Article? = nil
-    @State private var showArticle = false
     
     var body: some View {
         NavigationView {
@@ -20,10 +18,7 @@ struct LearnView: View {
                     // Список статей
                     VStack(spacing: 16) {
                         ForEach(articleStore.articles) { article in
-                            Button {
-                                selectedArticle = article
-                                showArticle = true
-                            } label: {
+                            NavigationLink(destination: ArticleDetailView(article: article)) {
                                 ArticleCardView(article: article)
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -43,13 +38,8 @@ struct LearnView: View {
                     .foregroundColor(.blue)
                 }
             }
-            .sheet(isPresented: $showArticle) {
-                if let article = selectedArticle {
-                    ArticleDetailView(article: article, isPresented: $showArticle)
-                        .edgesIgnoringSafeArea(.bottom)
-                }
-            }
         }
+        .navigationViewStyle(StackNavigationViewStyle()) // Используем стек для более надежной навигации
     }
 }
 
@@ -178,63 +168,50 @@ struct ArticleCardView: View {
 
 struct ArticleDetailView: View {
     let article: Article
-    @Binding var isPresented: Bool
+    @State private var opacity: Double = 0
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Верхняя панель с заголовком и кнопкой "Done"
-            HStack {
-                Spacer()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Главное изображение
+                articleBackground
+                    .frame(height: 220)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(.horizontal)
+                    .padding(.top)
+                
+                // Заголовок статьи
                 Text(article.title)
-                    .font(.headline)
-                Spacer()
-                Button("Done") {
-                    isPresented = false
-                }
-                .foregroundColor(.blue)
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .padding(.horizontal)
+                
+                // Подзаголовок
+                Text(article.subtitle)
+                    .font(.title3)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal)
+                
+                // Содержание статьи
+                Text(article.content)
+                    .font(.body)
+                    .padding(.horizontal)
+                    .padding(.bottom, 30)
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .overlay(
-                Rectangle()
-                    .frame(height: 0.5)
-                    .foregroundColor(Color.gray.opacity(0.3)),
-                alignment: .bottom
-            )
-            
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Главное изображение
-                    articleBackground
-                        .frame(height: 220)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .padding(.horizontal)
-                        .padding(.top)
-                    
-                    // Заголовок статьи
-                    Text(article.title)
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .padding(.horizontal)
-                    
-                    // Подзаголовок
-                    Text(article.subtitle)
-                        .font(.title3)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
-                    
-                    // Содержание статьи
-                    Text(article.content)
-                        .font(.body)
-                        .padding(.horizontal)
-                        .padding(.bottom, 30)
-                }
+            .opacity(opacity)
+        }
+        .navigationTitle(article.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .background(Color(.systemBackground))
+        .onAppear {
+            // Простая анимация постепенного появления контента
+            withAnimation(.easeIn(duration: 0.5)) {
+                opacity = 1
             }
         }
-        .background(Color(.systemBackground))
     }
     
-    // Повторяем градиентный фон для детального вида
+    // Градиентный фон для детального вида
     var articleBackground: some View {
         Group {
             if article.title.contains("акустическая") {

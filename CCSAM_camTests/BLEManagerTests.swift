@@ -2,7 +2,7 @@ import XCTest
 import CoreBluetooth
 @testable import CCSAM_cam
 
-// Простые протоколы для тестирования
+
 protocol CentralManagerProtocol: AnyObject {
     var state: CBManagerState { get }
     var delegate: CBCentralManagerDelegate? { get set }
@@ -12,7 +12,6 @@ protocol CentralManagerProtocol: AnyObject {
     func cancelPeripheralConnection(_ peripheral: CBPeripheral)
 }
 
-// Простой мок для центрального менеджера
 class MockCentralManager: CentralManagerProtocol {
     var state: CBManagerState = .poweredOn
     weak var delegate: CBCentralManagerDelegate?
@@ -39,10 +38,8 @@ class MockCentralManager: CentralManagerProtocol {
     }
 }
 
-// Адаптер CBCentralManager для использования в тестах
 extension CBCentralManager: CentralManagerProtocol {}
 
-// Простой тестовый класс
 class BLEManagerTests: XCTestCase {
     var bleManager: BLEManager!
     
@@ -56,7 +53,6 @@ class BLEManagerTests: XCTestCase {
         super.tearDown()
     }
     
-    // Тест для проверки инициализации
     func testInitialization() {
         XCTAssertNotNil(bleManager)
         XCTAssertFalse(bleManager.isConnected)
@@ -64,12 +60,10 @@ class BLEManagerTests: XCTestCase {
         XCTAssertEqual(bleManager.statusMessage, "Ready to scan")
     }
     
-    // Тест для проверки discoveredDevices
     func testDiscoveredDevices() {
         XCTAssertEqual(bleManager.discoveredDevices.count, 0)
     }
     
-    // Тест для проверки некоторых публичных свойств
     func testPublishedProperties() {
         XCTAssertFalse(bleManager.isScanning)
         XCTAssertFalse(bleManager.receiveInProgress)

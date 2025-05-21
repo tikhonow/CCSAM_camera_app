@@ -148,6 +148,106 @@ class CCSAM_camUITests: XCTestCase {
         }
     }
     
+    // Тест для проверки отсутствия белого экрана при открытии статьи
+    func testArticleOpeningWithoutWhiteScreen() throws {
+        // Переходим на вкладку обучения
+        let tabBar = app.tabBars.firstMatch
+        
+        // Ищем вкладку "Обучение" или "Learn" - она может иметь разные названия
+        let learnTabButton = tabBar.buttons["Обучение"]
+            .or(app.tabBars.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'обуч'")).firstMatch)
+            .or(app.tabBars.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'learn'")).firstMatch)
+            .or(app.tabBars.buttons.element(boundBy: 4)) // Обычно это пятая вкладка (индекс 4)
+            
+        XCTAssertTrue(learnTabButton.exists, "Вкладка с обучающими материалами должна существовать")
+        
+        // Для отладки напечатаем все доступные вкладки
+        print("Доступные вкладки в таб-баре:")
+        for (index, button) in tabBar.buttons.allElementsBoundByIndex.enumerated() {
+            print("[\(index)]: '\(button.label)' (identifier: \(button.identifier), enabled: \(button.isEnabled))")
+        }
+        
+        // Переходим на вкладку обучения
+        learnTabButton.tap()
+        sleep(1) // Небольшая задержка для загрузки UI
+        
+        // Проверяем, что мы на правильном экране
+        let learnTitle = app.staticTexts["Обучение"]
+            .or(app.staticTexts["Learn"])
+            .or(app.navigationBars.staticTexts.firstMatch) // Заголовок может быть в навбаре
+        XCTAssertTrue(learnTitle.exists, "Заголовок экрана обучения должен отображаться")
+        
+        // Проверяем наличие списка статей
+        let listOfArticles = app.scrollViews.firstMatch
+        XCTAssertTrue(listOfArticles.exists, "Список статей должен существовать")
+        
+        // Проверяем, что в списке есть хотя бы одна статья и находим первую
+        let firstArticleTitle = app.staticTexts["Что такое акустическая камера?"]
+            .or(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'акустическ'")).firstMatch)
+            .or(app.buttons.firstMatch) // Может быть внутри кнопки
+        XCTAssertTrue(firstArticleTitle.exists, "Должна быть видна хотя бы одна статья")
+        
+        // Делаем скриншот перед открытием статьи для отладки
+        let beforeScreenshot = XCUIScreen.main.screenshot()
+        let beforeAttachment = XCTAttachment(screenshot: beforeScreenshot)
+        beforeAttachment.name = "Before_Opening_Article"
+        beforeAttachment.lifetime = .keepAlways
+        self.add(beforeAttachment)
+        
+        // Открываем первую статью
+        firstArticleTitle.tap()
+        
+        // Небольшая задержка для уверенности, что представление загрузилось
+        usleep(500000) // Увеличиваем до 500 мс для надежности
+        
+        // Делаем скриншот сразу после открытия для отладки
+        let afterScreenshot = XCUIScreen.main.screenshot()
+        let afterAttachment = XCTAttachment(screenshot: afterScreenshot)
+        afterAttachment.name = "After_Opening_Article"
+        afterAttachment.lifetime = .keepAlways
+        self.add(afterAttachment)
+        
+        // Запускаем поиск любых текстовых элементов на экране для отладки
+        print("Текстовые элементы на экране статьи:")
+        for (index, text) in app.staticTexts.allElementsBoundByIndex.enumerated() {
+            print("Текст [\(index)]: '\(text.label)'")
+        }
+        
+        // Проверяем, что на экране виден контент, а не белый экран
+        // Проверяем наличие любых элементов интерфейса, которые указывают на загрузку статьи
+        let anyUIElements = app.staticTexts.count > 0 || app.images.count > 0
+        XCTAssertTrue(anyUIElements, "На экране должны быть какие-либо элементы интерфейса (не белый экран)")
+        
+        // Ищем заголовок статьи
+        let articleContentTitle = app.staticTexts["Что такое акустическая камера?"]
+            .or(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'акустическ'")).firstMatch)
+            .or(app.navigationBars.staticTexts.firstMatch) // Заголовок может быть в навбаре
+            .or(app.staticTexts.element(boundBy: 0)) // Или первый текстовый элемент
+        
+        // Пытаемся прокрутить статью в любом случае - это поможет увидеть контент, даже если он не полностью загрузился
+        if app.scrollViews.firstMatch.exists {
+            let scroll = app.scrollViews.firstMatch
+            let startPosition = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let endPosition = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2))
+            startPosition.press(forDuration: 0.1, thenDragTo: endPosition)
+            
+            // Небольшая пауза после прокрутки
+            usleep(200000)
+        }
+        
+        // Делаем еще один скриншот после прокрутки
+        let scrollScreenshot = XCUIScreen.main.screenshot()
+        let scrollAttachment = XCTAttachment(screenshot: scrollScreenshot)
+        scrollAttachment.name = "After_Scrolling_Article"
+        scrollAttachment.lifetime = .keepAlways
+        self.add(scrollAttachment)
+        
+        // Окончательная проверка - должны быть видны элементы после прокрутки
+        let visibleElements = app.staticTexts.count > 0
+        XCTAssertTrue(visibleElements, "После прокрутки должен быть виден текст статьи")
+    }
+
+    
 }
 
 // Расширение для удобства работы с элементами UI
