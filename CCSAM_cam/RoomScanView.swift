@@ -9,17 +9,145 @@ import SceneKit.ModelIO
 // Сервис для хранения данных о комнате
 class RoomDataManager: ObservableObject {
     @Published var savedRooms: [SavedRoom] = []
+    private let savedRoomsKey = "savedRoomsIndex"
+    private let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    private let isFirstLaunchKey = "RoomDataManagerFirstLaunch"
+    
+    init() {
+        // Проверяем, доступны ли защищенные данные (устройство разблокировано)
+        if #available(iOS 14.0, *), !UIApplication.shared.isProtectedDataAvailable {
+            print("RoomDataManager: Защищенные данные недоступны, ожидание разблокировки устройства")
+            
+            // Подписываемся на уведомление о разблокировке устройства
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(protectedDataDidBecomeAvailable),
+                name: UIApplication.protectedDataDidBecomeAvailableNotification,
+                object: nil
+            )
+        } else {
+            // Устройство разблокировано, загружаем данные
+            loadRooms()
+        }
+    }
+    
+    @objc private func protectedDataDidBecomeAvailable() {
+        print("RoomDataManager: Защищенные данные стали доступны, загружаем комнаты")
+        loadRooms()
+        
+        // Отписываемся от уведомления
+        NotificationCenter.default.removeObserver(
+            self,
+            name: UIApplication.protectedDataDidBecomeAvailableNotification,
+            object: nil
+        )
+    }
     
     // Сохранить новую комнату
     func saveRoom(_ capturedRoom: CapturedRoom, name: String = "Новая комната") {
+        let id = UUID()
         let newSavedRoom = SavedRoom(
-            id: UUID(),
-            capturedRoom: capturedRoom,
+            id: id,
             name: name,
             date: Date(),
             surfaces: surfacesFromRoom(capturedRoom)
         )
+        
+        // Сохраняем модель комнаты в файл
+        saveCapturedRoomToFile(capturedRoom, with: id)
+        
+        // Добавляем информацию о комнате в список
         savedRooms.append(newSavedRoom)
+        saveRoomsToStorage()
+    }
+    
+    // Принудительно сохранить изменения на диск
+    func forceSynchronize() {
+        let currentRooms = savedRooms
+        UserDefaults.standard.synchronize() // Для старых версий iOS
+        
+        // Дополнительная защита - перезагружаем после сохранения
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Проверяем, не потерялись ли данные
+            let savedData = UserDefaults.standard.data(forKey: self.savedRoomsKey)
+            if savedData == nil && !currentRooms.isEmpty {
+                print("RoomDataManager: Данные не сохранились, повторяем сохранение")
+                self.savedRooms = currentRooms
+                self.saveRoomsToStorage()
+            }
+        }
+    }
+    
+    // Сохраняем CapturedRoom в файл на диске
+    private func saveCapturedRoomToFile(_ room: CapturedRoom, with id: UUID) {
+        let roomURL = documentsDirectory.appendingPathComponent("room_\(id.uuidString).usdz")
+        
+        do {
+            try room.export(to: roomURL)
+            print("Комната успешно сохранена в: \(roomURL.path)")
+        } catch {
+            print("Ошибка при сохранении комнаты в файл: \(error.localizedDescription)")
+        }
+    }
+    
+    // Загрузить CapturedRoom из файла
+    func loadCapturedRoom(with id: UUID) -> CapturedRoom? {
+        let roomURL = documentsDirectory.appendingPathComponent("room_\(id.uuidString).usdz")
+        
+        // В текущем API RoomPlan нет прямого способа загрузить CapturedRoom из файла
+        // Здесь нужно было бы использовать API для загрузки модели из USDZ
+        // В этом примере мы возвращаем заглушку
+        
+        return nil // В реальном приложении здесь должна быть загрузка модели
+    }
+    
+    // Загрузить комнаты из хранилища
+    private func loadRooms() {
+        guard let roomsData = UserDefaults.standard.data(forKey: savedRoomsKey) else { return }
+        
+        do {
+            let decoder = JSONDecoder()
+            let roomIndexes = try decoder.decode([SavedRoom].self, from: roomsData)
+            self.savedRooms = roomIndexes
+            print("RoomDataManager: Загружено \(roomIndexes.count) комнат")
+        } catch {
+            print("Ошибка при загрузке комнат: \(error.localizedDescription)")
+        }
+    }
+    
+    // Сохранить комнаты в хранилище
+    func saveRoomsToStorage() {
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(savedRooms)
+            UserDefaults.standard.set(data, forKey: savedRoomsKey)
+            print("RoomDataManager: Сохранено \(savedRooms.count) комнат")
+            forceSynchronize()
+        } catch {
+            print("Ошибка при сохранении комнат: \(error.localizedDescription)")
+        }
+    }
+    
+    // Удалить комнату
+    func deleteRoom(at indexSet: IndexSet) {
+        // Удаляем файлы комнат
+        for index in indexSet {
+            if index < savedRooms.count {
+                let roomToDelete = savedRooms[index]
+                let fileURL = documentsDirectory.appendingPathComponent("room_\(roomToDelete.id.uuidString).usdz")
+                
+                do {
+                    try FileManager.default.removeItem(at: fileURL)
+                    print("Удален файл комнаты: \(fileURL.path)")
+                } catch {
+                    print("Не удалось удалить файл комнаты: \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        // Удаляем записи о комнатах
+        savedRooms.remove(atOffsets: indexSet)
+        saveRoomsToStorage()
     }
     
     // Получить поверхности из комнаты
@@ -43,12 +171,103 @@ class RoomDataManager: ObservableObject {
 }
 
 // Модель для сохраненной комнаты
-struct SavedRoom: Identifiable {
+class SavedRoom: Identifiable, Codable {
     let id: UUID
-    let capturedRoom: CapturedRoom
     var name: String
     let date: Date
     var surfaces: [SurfaceViewModel]
+    
+    // Сохраняем основные параметры комнаты для случая, когда файл недоступен
+    var roomWidth: Float = 0
+    var roomHeight: Float = 0
+    var roomLength: Float = 0
+    var wallCount: Int = 0
+    var windowCount: Int = 0
+    var doorCount: Int = 0
+    
+    // CapturedRoom загружаем динамически из файла
+    var capturedRoom: CapturedRoom? {
+        let roomDataManager = RoomDataManager()
+        return roomDataManager.loadCapturedRoom(with: id)
+    }
+    
+    init(id: UUID, name: String, date: Date, surfaces: [SurfaceViewModel]) {
+        self.id = id
+        self.name = name
+        self.date = date
+        self.surfaces = surfaces
+        
+        // Вычисляем основные параметры комнаты
+        self.wallCount = surfaces.filter { $0.surfaceCategory == 0 }.count
+        self.windowCount = surfaces.filter { $0.surfaceCategory == 1 }.count
+        self.doorCount = surfaces.filter { $0.surfaceCategory == 2 }.count
+        
+        // Вычисляем примерные размеры комнаты по поверхностям
+        let walls = surfaces.filter { $0.surfaceCategory == 0 }
+        if !walls.isEmpty {
+            let xDimensions = walls.map { $0.dimensionX }
+            let yDimensions = walls.map { $0.dimensionY }
+            
+            if let maxX = xDimensions.max(), let maxY = yDimensions.max() {
+                self.roomWidth = maxX
+                self.roomHeight = maxY
+            }
+        }
+    }
+}
+
+// Модель для представления данных о поверхности
+class SurfaceViewModel: Identifiable, Codable {
+    let id = UUID()
+    var name: String
+    var notes: String
+    
+    // Эти свойства нельзя сериализовать через Codable, храним их отдельно
+    var surfaceCategory: Int
+    var dimensionX: Float
+    var dimensionY: Float
+    var transform: [Float]
+    
+    var dimensions: String {
+        return String(format: "%.2f x %.2f м", dimensionX, dimensionY)
+    }
+    
+    var type: String {
+        switch surfaceCategory {
+        case 0: return "Стена"
+        case 1: return "Окно"
+        case 2: return "Дверь"
+        case 3: return "Проем"
+        default: return "Неизвестно"
+        }
+    }
+    
+    init(surface: CapturedRoom.Surface, name: String = "", notes: String = "") {
+        self.name = name
+        self.notes = notes
+        
+        // Сохраняем только необходимые данные
+        self.dimensionX = surface.dimensions.x
+        self.dimensionY = surface.dimensions.y
+        
+        // Преобразуем category в Int для Codable
+        switch surface.category {
+        case .wall: self.surfaceCategory = 0
+        case .window: self.surfaceCategory = 1
+        case .door: self.surfaceCategory = 2
+        case .opening: self.surfaceCategory = 3
+        @unknown default: self.surfaceCategory = -1
+        }
+        
+        // Преобразуем матрицу трансформации в массив
+        let matrix = surface.transform
+        transform = [
+            matrix.columns.0.x, matrix.columns.0.y, matrix.columns.0.z, matrix.columns.0.w,
+            matrix.columns.1.x, matrix.columns.1.y, matrix.columns.1.z, matrix.columns.1.w,
+            matrix.columns.2.x, matrix.columns.2.y, matrix.columns.2.z, matrix.columns.2.w,
+            matrix.columns.3.x, matrix.columns.3.y, matrix.columns.3.z, matrix.columns.3.w
+        ]
+    }
 }
 
 // Тип уведомления
@@ -116,11 +335,20 @@ struct RoomScanView: View {
     @State private var selectedSurface: SurfaceViewModel?
     @State private var roomName = "Новая комната"
     @State private var showSaveDialog = false
+    // Используем один общий экземпляр RoomDataManager для всего приложения
     @StateObject private var roomDataManager = RoomDataManager()
     @State private var showSavedRooms = false
     @State private var notifications: [ScanningNotification] = []
+    @State private var showingMetadataOnly = false
+    @State private var selectedSavedRoom: SavedRoom? = nil
     
-    func showNotification(_ message: String, type: NotificationType) {
+    // Проверка наличия сохраненных данных при запуске
+    init() {
+        // Этот инициализатор используется для логирования, но нам не нужно здесь ничего делать,
+        // т.к. StateObject будет инициализирован автоматически
+    }
+    
+    func showNotification(_ message: String, _ type: NotificationType) {
         let notification = ScanningNotification(type: type, message: message)
         notifications.append(notification)
         
@@ -144,6 +372,8 @@ struct RoomScanView: View {
             ZStack {
                 if let room = scannedRoom {
                     RoomResultView(room: room, selectedSurface: $selectedSurface, showNotification: showNotification)
+                } else if showingMetadataOnly, let room = selectedSavedRoom {
+                    MetadataRoomView(savedRoom: room, showNotification: showNotification)
                 } else {
                     VStack(spacing: 20) {
                         Image(systemName: "house.fill")
@@ -193,7 +423,7 @@ struct RoomScanView: View {
             }
             .navigationTitle("Room Scanner")
             .toolbar {
-                if scannedRoom != nil {
+                if scannedRoom != nil || showingMetadataOnly {
                     ToolbarItem(placement: .navigationBarLeading) {
                         Button("Мои комнаты") {
                             showSavedRooms = true
@@ -201,12 +431,16 @@ struct RoomScanView: View {
                     }
                     
                     ToolbarItemGroup(placement: .navigationBarTrailing) {
-                        Button("Сохранить") {
-                            showSaveDialog = true
+                        if scannedRoom != nil {
+                            Button("Сохранить") {
+                                showSaveDialog = true
+                            }
                         }
                         
                         Button("Новое сканирование") {
                             showScanner = true
+                            showingMetadataOnly = false
+                            selectedSavedRoom = nil
                         }
                     }
                 }
@@ -216,11 +450,21 @@ struct RoomScanView: View {
                     .edgesIgnoringSafeArea(.all)
             }
             .sheet(item: $selectedSurface) { surface in
-                SurfaceDetailView(surface: surface)
+                SurfaceDetailView(surface: surface, dataManager: RoomDataManager())
             }
             .sheet(isPresented: $showSavedRooms) {
-                SavedRoomsView(rooms: $roomDataManager.savedRooms, onSelect: { savedRoom in
-                    scannedRoom = savedRoom.capturedRoom
+                SavedRoomsView(rooms: $roomDataManager.savedRooms, dataManager: roomDataManager, onSelect: { savedRoom in
+                    if let loadedRoom = savedRoom.capturedRoom {
+                        scannedRoom = loadedRoom
+                        showingMetadataOnly = false
+                        selectedSavedRoom = nil
+                    } else {
+                        // Если не удалось загрузить полную модель, показываем только метаданные
+                        scannedRoom = nil
+                        showingMetadataOnly = true
+                        selectedSavedRoom = savedRoom
+                        showNotification("Загружены только метаданные комнаты", .info)
+                    }
                     showSavedRooms = false
                 })
             }
@@ -230,6 +474,7 @@ struct RoomScanView: View {
                 Button("Сохранить") {
                     if let room = scannedRoom {
                         roomDataManager.saveRoom(room, name: roomName)
+                        showNotification("Комната успешно сохранена", .info)
                     }
                 }
             } message: {
@@ -242,48 +487,65 @@ struct RoomScanView: View {
 // Представление списка сохраненных комнат
 struct SavedRoomsView: View {
     @Binding var rooms: [SavedRoom]
+    var dataManager: RoomDataManager
     var onSelect: (SavedRoom) -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var roomToDelete: SavedRoom? = nil
+    @State private var isLoading = false
+    @State private var selectedRoom: SavedRoom? = nil
+    @State private var showLoadingError = false
     
     var body: some View {
         NavigationView {
-            List {
-                ForEach(rooms) { room in
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(room.name)
-                                .font(.headline)
+            ZStack {
+                List {
+                    ForEach(rooms) { room in
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(room.name)
+                                    .font(.headline)
+                                
+                                Text(formattedDate(room.date))
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                
+                                Text("\(room.surfaces.count) объектов")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                
+                                Text("Стены: \(room.wallCount), Окна: \(room.windowCount), Двери: \(room.doorCount)")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
                             
-                            Text(formattedDate(room.date))
-                                .font(.caption)
-                                .foregroundColor(.gray)
+                            Spacer()
                             
-                            Text("\(room.surfaces.count) объектов")
-                                .font(.caption)
-                                .foregroundColor(.gray)
+                            Button {
+                                loadRoom(room)
+                            } label: {
+                                Text("Открыть")
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            }
                         }
-                        
-                        Spacer()
-                        
-                        Button {
-                            onSelect(room)
-                        } label: {
-                            Text("Открыть")
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            loadRoom(room)
                         }
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        onSelect(room)
+                    .onDelete { indexSet in
+                        dataManager.deleteRoom(at: indexSet)
                     }
                 }
-                .onDelete { indexSet in
-                    rooms.remove(atOffsets: indexSet)
+                
+                if isLoading {
+                    ProgressView("Загрузка комнаты...")
+                        .padding()
+                        .background(Color(.systemBackground))
+                        .cornerRadius(10)
+                        .shadow(radius: 5)
                 }
             }
             .navigationTitle("Сохраненные комнаты")
@@ -294,6 +556,26 @@ struct SavedRoomsView: View {
                     }
                 }
             }
+            .alert("Ошибка загрузки", isPresented: $showLoadingError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Не удалось загрузить модель комнаты. Файл может быть поврежден или удален. Доступен только просмотр метаданных.")
+            }
+        }
+    }
+    
+    private func loadRoom(_ room: SavedRoom) {
+        isLoading = true
+        selectedRoom = room
+        
+        // Поскольку мы не можем загрузить полную CapturedRoom из файла в данный момент,
+        // всегда показываем метаданные комнаты
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            isLoading = false
+            
+            // Здесь всегда открываем комнату даже без 3D-модели
+            // В будущем можно реализовать проверку на наличие файла
+            onSelect(room)
         }
     }
     
@@ -516,30 +798,6 @@ protocol RoomCaptureViewControllerDelegate: AnyObject {
     func captureViewController(_ viewController: RoomCaptureViewController, didFinishWith result: CapturedRoom?)
 }
 
-// Модель для представления данных о поверхности
-struct SurfaceViewModel: Identifiable {
-    let id = UUID()
-    let surface: CapturedRoom.Surface
-    var name: String = ""
-    var notes: String = ""
-    
-    var dimensions: String {
-        let width = surface.dimensions.x
-        let height = surface.dimensions.y
-        return String(format: "%.2f x %.2f м", width, height)
-    }
-    
-    var type: String {
-        switch surface.category {
-        case .wall: return "Стена"
-        case .window: return "Окно"
-        case .door: return "Дверь"
-        case .opening: return "Проем"
-        @unknown default: return "Неизвестно"
-        }
-    }
-}
-
 // Вид для результатов сканирования
 struct RoomResultView: View {
     let room: CapturedRoom
@@ -672,6 +930,8 @@ struct RoomModelView: UIViewRepresentable {
     
     class Coordinator: NSObject {
         let parent: RoomModelView
+        // Словарь для сопоставления узлов и информации о поверхностях
+        private var nodeToSurfaceInfo: [SCNNode: (category: String, index: Int)] = [:]
         
         init(_ parent: RoomModelView) {
             self.parent = parent
@@ -692,53 +952,44 @@ struct RoomModelView: UIViewRepresentable {
                 // Подсвечиваем выбранный объект
                 highlightNode(node)
                 
-                // Вывести информацию о нажатом объекте
-                if let name = node.name {
-                    print("Нажат объект: \(name)")
-                    
-                    // Извлекаем информацию о поверхности из имени ноды
-                    // Например: "wall_1" или "door_0"
-                    let components = name.split(separator: "_")
-                    if components.count >= 2,
-                       let categoryStr = components.first,
-                       let indexStr = components.last,
-                       let index = Int(indexStr) {
-                        
-                        let category = String(categoryStr)
-                        
-                        // Получаем поверхность в зависимости от категории
-                        var surface: CapturedRoom.Surface?
-                        switch category {
-                        case "wall":
-                            if index < self.parent.room.walls.count {
-                                surface = self.parent.room.walls[index]
-                            }
-                        case "window":
-                            if index < self.parent.room.windows.count {
-                                surface = self.parent.room.windows[index]
-                            }
-                        case "door":
-                            if index < self.parent.room.doors.count {
-                                surface = self.parent.room.doors[index]
-                            }
-                        case "opening":
-                            if index < self.parent.room.openings.count {
-                                surface = self.parent.room.openings[index]
-                            }
-                        default:
-                            break
+                // Проверяем, есть ли информация о поверхности для этого узла
+                if let info = nodeToSurfaceInfo[node] {
+                    // Получаем поверхность в зависимости от категории
+                    var surface: CapturedRoom.Surface?
+                    switch info.category {
+                    case "wall":
+                        if info.index < self.parent.room.walls.count {
+                            surface = self.parent.room.walls[info.index]
                         }
-                        
-                        // Если нашли поверхность, создаем модель и вызываем обработчик
-                        if let surface = surface {
-                            let surfaceVM = SurfaceViewModel(surface: surface)
-                            DispatchQueue.main.async {
-                                self.parent.onSelectSurface?(surfaceVM)
-                            }
+                    case "window":
+                        if info.index < self.parent.room.windows.count {
+                            surface = self.parent.room.windows[info.index]
+                        }
+                    case "door":
+                        if info.index < self.parent.room.doors.count {
+                            surface = self.parent.room.doors[info.index]
+                        }
+                    case "opening":
+                        if info.index < self.parent.room.openings.count {
+                            surface = self.parent.room.openings[info.index]
+                        }
+                    default:
+                        break
+                    }
+                    
+                    // Если нашли поверхность, создаем модель и вызываем обработчик
+                    if let surface = surface {
+                        let surfaceVM = SurfaceViewModel(surface: surface)
+                        DispatchQueue.main.async {
+                            self.parent.onSelectSurface?(surfaceVM)
                         }
                     }
                 }
             }
+        }
+        
+        func registerNode(_ node: SCNNode, forCategory category: String, index: Int) {
+            nodeToSurfaceInfo[node] = (category: category, index: index)
         }
         
         func highlightNode(_ node: SCNNode) {
@@ -760,22 +1011,6 @@ struct RoomModelView: UIViewRepresentable {
                 SCNTransaction.animationDuration = 0.2
                 node.geometry?.firstMaterial?.diffuse.contents = originalColor
                 SCNTransaction.commit()
-            }
-        }
-        
-        func showInfoForNode(_ node: SCNNode, in view: SCNView, at point: CGPoint) {
-            // Создаем всплывающую подсказку (можно реализовать через UIPopoverPresentationController)
-            let alertController = UIAlertController(
-                title: "Объект: \(node.name ?? "Без имени")",
-                message: "Нажмите для просмотра дополнительной информации",
-                preferredStyle: .alert
-            )
-            
-            alertController.addAction(UIAlertAction(title: "OK", style: .default))
-            
-            // Получаем корневой контроллер
-            if let rootVC = view.window?.rootViewController {
-                rootVC.present(alertController, animated: true)
             }
         }
     }
@@ -814,28 +1049,28 @@ struct RoomModelView: UIViewRepresentable {
         // Конвертируем CapturedRoom в SCNScene
         // Добавляем стены
         for (index, wall) in room.walls.enumerated() {
-            addSurfaceToScene(scene, surface: wall, category: "wall", index: index)
+            addSurfaceToScene(scene, surface: wall, category: "wall", index: index, coordinator: context.coordinator)
         }
         
         // Добавляем окна
         for (index, window) in room.windows.enumerated() {
-            addSurfaceToScene(scene, surface: window, category: "window", index: index)
+            addSurfaceToScene(scene, surface: window, category: "window", index: index, coordinator: context.coordinator)
         }
         
         // Добавляем двери
         for (index, door) in room.doors.enumerated() {
-            addSurfaceToScene(scene, surface: door, category: "door", index: index)
+            addSurfaceToScene(scene, surface: door, category: "door", index: index, coordinator: context.coordinator)
         }
         
         // Добавляем проемы
         for (index, opening) in room.openings.enumerated() {
-            addSurfaceToScene(scene, surface: opening, category: "opening", index: index)
+            addSurfaceToScene(scene, surface: opening, category: "opening", index: index, coordinator: context.coordinator)
         }
         
         return scene
     }
     
-    private func addSurfaceToScene(_ scene: SCNScene, surface: CapturedRoom.Surface, category: String, index: Int) {
+    private func addSurfaceToScene(_ scene: SCNScene, surface: CapturedRoom.Surface, category: String, index: Int, coordinator: Coordinator) {
         // Создаем геометрию на основе размеров поверхности
         let width = surface.dimensions.x
         let height = surface.dimensions.y
@@ -869,6 +1104,9 @@ struct RoomModelView: UIViewRepresentable {
         // Создаем node
         let node = SCNNode(geometry: geometry)
         node.name = "\(category)_\(index)"
+        
+        // Регистрируем узел в координаторе
+        coordinator.registerNode(node, forCategory: category, index: index)
         
         // Устанавливаем позицию на основе transform
         let transform = surface.transform
@@ -1062,11 +1300,13 @@ struct SurfaceDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showMeasurements = false
     @State private var showARView = false
+    @StateObject private var dataManager: RoomDataManager
     
-    init(surface: SurfaceViewModel) {
+    init(surface: SurfaceViewModel, dataManager: RoomDataManager) {
         self._surface = State(initialValue: surface)
         self._name = State(initialValue: surface.name)
         self._notes = State(initialValue: surface.notes)
+        self._dataManager = StateObject(wrappedValue: dataManager)
     }
     
     var body: some View {
@@ -1092,7 +1332,7 @@ struct SurfaceDetailView: View {
                     }
                     
                     if showMeasurements {
-                        DetailedMeasurementsView(surface: surface.surface)
+                        DetailedMeasurementsView(surface: surface)
                     }
                 }
                 
@@ -1115,6 +1355,7 @@ struct SurfaceDetailView: View {
                         // Сохраняем внесенные изменения
                         surface.name = name
                         surface.notes = notes
+                        dataManager.saveRoomsToStorage() // Сохраняем изменения в хранилище
                         dismiss()
                     }
                 }
@@ -1130,41 +1371,396 @@ struct SurfaceDetailView: View {
 
 // Детальная информация о размерах поверхности
 struct DetailedMeasurementsView: View {
-    let surface: CapturedRoom.Surface
+    let surface: SurfaceViewModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Ширина: \(String(format: "%.2f", surface.dimensions.x)) м")
-            Text("Высота: \(String(format: "%.2f", surface.dimensions.y)) м")
+            Text("Ширина: \(String(format: "%.2f", surface.dimensionX)) м")
+            Text("Высота: \(String(format: "%.2f", surface.dimensionY)) м")
             
             Divider()
             
-            Text("Площадь: \(String(format: "%.2f", surface.dimensions.x * surface.dimensions.y)) м²")
+            Text("Площадь: \(String(format: "%.2f", surface.dimensionX * surface.dimensionY)) м²")
             
-            Text("Достоверность: \(confidenceString(surface.confidence))")
-                .foregroundColor(confidenceColor(surface.confidence))
+            // Уровень достоверности больше не доступен в нашей модели данных
+            Text("Тип поверхности: \(surface.type)")
+                .foregroundColor(.blue)
         }
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(8)
     }
+}
+
+// Представление только для метаданных комнаты
+struct MetadataRoomView: View {
+    var savedRoom: SavedRoom
+    var showNotification: (String, NotificationType) -> Void
+    @State private var selectedSurface: SurfaceViewModel?
     
-    private func confidenceString(_ confidence: CapturedRoom.Confidence) -> String {
-        switch confidence {
-        case .high: return "Высокая"
-        case .medium: return "Средняя"
-        case .low: return "Низкая"
-        @unknown default: return "Неизвестно"
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                Text("Просмотр сохранённой комнаты")
+                    .font(.title)
+                    .fontWeight(.bold)
+                
+                // 3D модель на основе сохраненных данных
+                SavedRoomModelView(savedRoom: savedRoom, onSelectSurface: { surface in
+                    selectedSurface = surface
+                    showNotification("Выбрана поверхность: \(surface.type)", .info)
+                })
+                .frame(height: 300)
+                .cornerRadius(12)
+                .padding()
+                .overlay(
+                    VStack {
+                        Spacer()
+                        Text("Нажмите на любой элемент комнаты для просмотра деталей")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(6)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(8)
+                            .padding(.bottom, 8)
+                    }
+                )
+                
+                Divider()
+                
+                // Информация о комнате
+                VStack(alignment: .leading, spacing: 15) {
+                    HStack {
+                        Image(systemName: "info.circle")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                        Text("Информация о комнате")
+                            .font(.headline)
+                    }
+                    
+                    Group {
+                        HStack {
+                            Text("Название:")
+                                .fontWeight(.medium)
+                            Text(savedRoom.name)
+                        }
+                        
+                        HStack {
+                            Text("Дата сканирования:")
+                                .fontWeight(.medium)
+                            Text(formattedDate(savedRoom.date))
+                        }
+                        
+                        HStack {
+                            Text("Всего объектов:")
+                                .fontWeight(.medium)
+                            Text("\(savedRoom.surfaces.count)")
+                        }
+                    }
+                    .padding(.leading)
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                .padding(.horizontal)
+                
+                // Параметры комнаты
+                VStack(alignment: .leading, spacing: 15) {
+                    HStack {
+                        Image(systemName: "ruler")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                        Text("Параметры комнаты")
+                            .font(.headline)
+                    }
+                    
+                    Group {
+                        HStack {
+                            Text("Стены:")
+                                .fontWeight(.medium)
+                            Text("\(savedRoom.wallCount)")
+                        }
+                        
+                        HStack {
+                            Text("Окна:")
+                                .fontWeight(.medium)
+                            Text("\(savedRoom.windowCount)")
+                        }
+                        
+                        HStack {
+                            Text("Двери:")
+                                .fontWeight(.medium)
+                            Text("\(savedRoom.doorCount)")
+                        }
+                        
+                        if savedRoom.roomWidth > 0 && savedRoom.roomHeight > 0 {
+                            HStack {
+                                Text("Примерные размеры:")
+                                    .fontWeight(.medium)
+                                Text(String(format: "%.2f x %.2f м", savedRoom.roomWidth, savedRoom.roomHeight))
+                            }
+                        }
+                    }
+                    .padding(.leading)
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                .padding(.horizontal)
+                
+                // Поверхности
+                if !savedRoom.surfaces.isEmpty {
+                    VStack(alignment: .leading, spacing: 15) {
+                        HStack {
+                            Image(systemName: "square.3.stack.3d")
+                                .font(.title2)
+                                .foregroundColor(.blue)
+                            Text("Обнаруженные поверхности")
+                                .font(.headline)
+                        }
+                        
+                        ForEach(savedRoom.surfaces.prefix(5)) { surface in
+                            HStack {
+                                Text(surface.type)
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Text(surface.dimensions)
+                            }
+                            .padding(.leading)
+                        }
+                        
+                        if savedRoom.surfaces.count > 5 {
+                            Text("... и еще \(savedRoom.surfaces.count - 5) объектов")
+                                .foregroundColor(.secondary)
+                                .padding(.leading)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                }
+                
+                Button {
+                    showNotification("Для полного просмотра комнаты необходимо отсканировать её заново", .warning)
+                } label: {
+                    Text("Отсканировать комнату заново")
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .padding(.top, 20)
+            }
+            .padding()
+        }
+        .onAppear {
+            showNotification("Загружена сохраненная комната", .info)
+        }
+        .sheet(item: $selectedSurface) { surface in
+            SurfaceDetailView(surface: surface, dataManager: RoomDataManager())
         }
     }
     
-    private func confidenceColor(_ confidence: CapturedRoom.Confidence) -> Color {
-        switch confidence {
-        case .high: return .green
-        case .medium: return .orange
-        case .low: return .red
-        @unknown default: return .gray
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+}
+
+// Вид для 3D-модели сохраненной комнаты с возможностью взаимодействия
+struct SavedRoomModelView: UIViewRepresentable {
+    let savedRoom: SavedRoom
+    var onSelectSurface: ((SurfaceViewModel) -> Void)? = nil
+    
+    func makeUIView(context: Context) -> SCNView {
+        let scnView = SCNView()
+        scnView.backgroundColor = UIColor.systemBackground
+        scnView.allowsCameraControl = true
+        scnView.autoenablesDefaultLighting = true
+        scnView.scene = createScene(context: context)
+        
+        // Добавляем обработчик нажатия
+        let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
+        scnView.addGestureRecognizer(tapGesture)
+        
+        return scnView
+    }
+    
+    func updateUIView(_ uiView: SCNView, context: Context) {
+        // Обновление не требуется
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject {
+        let parent: SavedRoomModelView
+        // Словарь для сопоставления узлов и индексов поверхностей
+        private var nodeToSurfaceIndex: [SCNNode: Int] = [:]
+        
+        init(_ parent: SavedRoomModelView) {
+            self.parent = parent
         }
+        
+        @objc func handleTap(_ gestureRecognize: UIGestureRecognizer) {
+            // Получаем view
+            guard let scnView = gestureRecognize.view as? SCNView else { return }
+            
+            // Получаем координаты нажатия
+            let p = gestureRecognize.location(in: scnView)
+            let hitResults = scnView.hitTest(p, options: [:])
+            
+            // Проверяем, нажал ли пользователь на объект
+            if let hit = hitResults.first {
+                let node = hit.node
+                
+                // Подсвечиваем выбранный объект
+                highlightNode(node)
+                
+                // Вывести информацию о нажатом объекте
+                if let surfaceIndex = nodeToSurfaceIndex[node] {
+                    if surfaceIndex < self.parent.savedRoom.surfaces.count {
+                        let surface = self.parent.savedRoom.surfaces[surfaceIndex]
+                        DispatchQueue.main.async {
+                            self.parent.onSelectSurface?(surface)
+                        }
+                    }
+                }
+            }
+        }
+        
+        func registerNode(_ node: SCNNode, forSurfaceIndex index: Int) {
+            nodeToSurfaceIndex[node] = index
+        }
+        
+        func highlightNode(_ node: SCNNode) {
+            // Создаем действие подсветки
+            let originalColor = node.geometry?.firstMaterial?.diffuse.contents as? UIColor ?? UIColor.white
+            let highlightColor = UIColor.yellow
+            
+            SCNTransaction.begin()
+            SCNTransaction.animationDuration = 0.2
+            
+            // Меняем цвет материала
+            node.geometry?.firstMaterial?.diffuse.contents = highlightColor
+            
+            SCNTransaction.commit()
+            
+            // Возвращаем исходный цвет через 0.5 секунды
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                SCNTransaction.begin()
+                SCNTransaction.animationDuration = 0.2
+                node.geometry?.firstMaterial?.diffuse.contents = originalColor
+                SCNTransaction.commit()
+            }
+        }
+    }
+    
+    private func createScene(context: Context) -> SCNScene {
+        let scene = SCNScene()
+        
+        // Добавляем камеру
+        let cameraNode = SCNNode()
+        cameraNode.camera = SCNCamera()
+        
+        // Находим максимальный размер комнаты для позиционирования камеры
+        let maxDimension = max(
+            savedRoom.roomWidth,
+            savedRoom.roomHeight
+        )
+        
+        // Позиционируем камеру
+        cameraNode.position = SCNVector3(0, 0, maxDimension * 2)
+        scene.rootNode.addChildNode(cameraNode)
+        
+        // Добавляем освещение
+        let ambientLight = SCNNode()
+        ambientLight.light = SCNLight()
+        ambientLight.light?.type = .ambient
+        ambientLight.light?.intensity = 100
+        scene.rootNode.addChildNode(ambientLight)
+        
+        let directionalLight = SCNNode()
+        directionalLight.light = SCNLight()
+        directionalLight.light?.type = .directional
+        directionalLight.light?.intensity = 800
+        directionalLight.position = SCNVector3(5, 5, 5)
+        scene.rootNode.addChildNode(directionalLight)
+        
+        // Добавляем поверхности из сохраненных данных
+        for (index, surface) in savedRoom.surfaces.enumerated() {
+            addSurfaceToScene(scene, surface: surface, index: index, coordinator: context.coordinator)
+        }
+        
+        return scene
+    }
+    
+    private func addSurfaceToScene(_ scene: SCNScene, surface: SurfaceViewModel, index: Int, coordinator: Coordinator) {
+        // Создаем геометрию на основе размеров поверхности
+        let width = CGFloat(surface.dimensionX)
+        let height = CGFloat(surface.dimensionY)
+        
+        let geometry = SCNBox(width: width, 
+                              height: height, 
+                              length: 0.1, 
+                              chamferRadius: 0)
+        
+        // Создаем цвет в зависимости от категории
+        var color: UIColor
+        switch surface.surfaceCategory {
+        case 0: // стена
+            color = UIColor.lightGray
+        case 1: // окно
+            color = UIColor.blue.withAlphaComponent(0.5)
+        case 2: // дверь
+            color = UIColor.brown
+        case 3: // проем
+            color = UIColor.green.withAlphaComponent(0.5)
+        default:
+            color = UIColor.gray
+        }
+        
+        // Создаем материал
+        let material = SCNMaterial()
+        material.diffuse.contents = color
+        material.transparency = surface.surfaceCategory == 1 || surface.surfaceCategory == 3 ? 0.5 : 1.0
+        geometry.materials = [material]
+        
+        // Создаем node
+        let node = SCNNode(geometry: geometry)
+        node.name = "\(surface.type)_\(index)"
+        
+        // Регистрируем узел для связи с индексом поверхности
+        coordinator.registerNode(node, forSurfaceIndex: index)
+        
+        // Устанавливаем позицию на основе transform
+        if surface.transform.count >= 16 {
+            let columns = (
+                SIMD4<Float>(surface.transform[0], surface.transform[1], surface.transform[2], surface.transform[3]),
+                SIMD4<Float>(surface.transform[4], surface.transform[5], surface.transform[6], surface.transform[7]),
+                SIMD4<Float>(surface.transform[8], surface.transform[9], surface.transform[10], surface.transform[11]),
+                SIMD4<Float>(surface.transform[12], surface.transform[13], surface.transform[14], surface.transform[15])
+            )
+            
+            let transform = simd_float4x4(columns: columns)
+            let position = SCNVector3(transform.columns.3.x, transform.columns.3.y, transform.columns.3.z)
+            node.position = position
+            
+            // Применяем поворот из transform
+            node.transform = SCNMatrix4(transform)
+        } else {
+            // Размещаем элементы в виде сетки если transform недоступен
+            let gridX = CGFloat(index % 3) * (width + 0.1)
+            let gridY = CGFloat(index / 3) * (height + 0.1)
+            node.position = SCNVector3(Float(gridX), Float(gridY), 0)
+        }
+        
+        // Добавляем node на сцену
+        scene.rootNode.addChildNode(node)
     }
 } 
  
