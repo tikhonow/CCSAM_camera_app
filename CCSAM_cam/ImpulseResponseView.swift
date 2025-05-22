@@ -1,11 +1,24 @@
 import SwiftUI
 import Charts
 import AVFoundation
+import ActivityKit
+
+// Определение структуры для Live Activity
+struct RIRRecordingAttributes: ActivityAttributes {
+    public struct ContentState: Codable, Hashable {
+        var progress: Double
+        var remainingTime: Double
+    }
+    
+    var recordingName: String
+}
 
 struct ImpulseResponseView: View {
     @EnvironmentObject private var bleManager: BLEManager
-    @State private var isRecording = false
     @State private var selectedTab = 0
+    @State private var recordingDuration: Double = 5.0
+    @State private var showingRIRRecordingView = false
+    @State private var recordedRIRData: [Float] = []
     
     var body: some View {
         NavigationView {
@@ -23,29 +36,9 @@ struct ImpulseResponseView: View {
                     
                     if selectedTab == 0 {
                         // Импульсный отклик
-                        if bleManager.impulseResponseData.isEmpty {
-                            VStack(spacing: 20) {
-                                Image(systemName: "waveform")
-                                    .font(.system(size: 60))
-                                    .foregroundColor(.gray)
-                                
-                                Text("Нет данных")
-                                    .font(.title)
-                                    .fontWeight(.bold)
-                                
-                                Text("Запустите получение импульсного отклика из вкладки 'Управление'")
-                                    .multilineTextAlignment(.center)
-                                    .foregroundColor(.gray)
-                                    .padding()
-                                
-                                // Recorder button
-                                RecordButton(isRecording: $isRecording, bleManager: bleManager)
-                            }
-                            .padding()
-                        } else {
-                            // Display impulse response data
-                            ScrollView {
-                                VStack(alignment: .leading, spacing: 20) {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 20) {
+                                if !bleManager.impulseResponseData.isEmpty {
                                     Text("Импульсный отклик")
                                         .font(.headline)
                                         .padding(.horizontal)
@@ -165,13 +158,50 @@ struct ImpulseResponseView: View {
                                     
                                     DataStatisticsView(data: bleManager.impulseResponseData)
                                         .padding(.horizontal)
+                                }
+                                
+                                // Если есть записанные данные RIR, показываем их
+                                if !recordedRIRData.isEmpty {
+                                    Divider()
                                     
-                                    // Recorder button
-                                    RecordButton(isRecording: $isRecording, bleManager: bleManager)
+                                    Text("Записанный RIR")
+                                        .font(.headline)
+                                        .padding(.horizontal)
+                                    
+                                    ImpulseResponseChart(data: recordedRIRData)
+                                        .frame(height: 300)
+                                        .padding(.horizontal)
+                                    
+                                    DataStatisticsView(data: recordedRIRData)
+                                        .padding(.horizontal)
+                                }
+                                
+                                VStack(spacing: 20) {
+                                    // Кнопка для записи RIR
+                                    Button(action: {
+                                        showingRIRRecordingView = true
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "waveform.circle.fill")
+                                                .font(.system(size: 24))
+                                                .foregroundColor(.green)
+                                            
+                                            Text("Записать RIR")
+                                                .font(.headline)
+                                        }
+                                        .frame(maxWidth: .infinity)
                                         .padding()
+                                        .background(Color(UIColor.systemGray6))
+                                        .cornerRadius(10)
+                                    }
+                                    .padding(.horizontal)
                                 }
                                 .padding(.vertical)
                             }
+                            .padding(.vertical)
+                        }
+                        .sheet(isPresented: $showingRIRRecordingView) {
+                            RIRRecordingView(recordingDuration: $recordingDuration, recordedData: $recordedRIRData)
                         }
                     } else {
                         // Акустический снимок
@@ -241,31 +271,221 @@ struct ImpulseResponseView: View {
     }
 }
 
-struct RecordButton: View {
-    @Binding var isRecording: Bool
-    var bleManager: BLEManager
+// Новый компонент для записи RIR
+struct RIRRecordingView: View {
+    @Binding var recordingDuration: Double
+    @Binding var recordedData: [Float]
+    @State private var isRecording = false
+    @State private var countdown: Double = 0
+    @State private var audioRecorder: AVAudioRecorder?
+    @State private var timer: Timer?
+    @State private var activity: Activity<RIRRecordingAttributes>? = nil
+    @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
-        Button(action: {
-            if isRecording {
-                bleManager.stopAudioRecording()
-            } else {
-                bleManager.startAudioRecording()
-            }
-            isRecording.toggle()
-        }) {
-            HStack {
-                Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(isRecording ? .red : .blue)
+        NavigationView {
+            VStack(spacing: 20) {
+                Text("Запись RIR")
+                    .font(.title)
+                    .padding()
                 
-                Text(isRecording ? "Остановить запись" : "Записать с микрофона")
-                    .font(.headline)
+                Text("Подготовьте стартовый пистолет или другой источник импульсного звука")
+                    .multilineTextAlignment(.center)
+                    .padding()
+                
+                VStack(alignment: .leading) {
+                    Text("Продолжительность записи: \(String(format: "%.1f", recordingDuration)) секунд")
+                    
+                    Slider(value: $recordingDuration, in: 1...30, step: 0.5)
+                        .padding(.vertical)
+                }
+                .padding()
+                
+                if isRecording {
+                    Text("Идет запись: \(String(format: "%.1f", countdown)) сек")
+                        .font(.title)
+                        .foregroundColor(.red)
+                        .padding()
+                    
+                    ProgressView(value: countdown, total: recordingDuration)
+                        .padding()
+                }
+                
+                Button(action: {
+                    if isRecording {
+                        stopRecording()
+                    } else {
+                        startRecording()
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                            .font(.system(size: 24))
+                        
+                        Text(isRecording ? "Остановить запись" : "Начать запись")
+                            .font(.headline)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(isRecording ? Color.red : Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                }
+                .padding()
+                
+                Spacer()
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color(UIColor.systemGray6))
-            .cornerRadius(10)
+            .navigationBarItems(trailing: Button("Готово") {
+                presentationMode.wrappedValue.dismiss()
+            })
+        }
+    }
+    
+    private func startRecording() {
+        let audioSession = AVAudioSession.sharedInstance()
+        
+        do {
+            try audioSession.setCategory(.record, mode: .default)
+            try audioSession.setActive(true)
+            
+            let documentPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let audioFilename = documentPath.appendingPathComponent("rir_recording.wav")
+            
+            let settings: [String: Any] = [
+                AVFormatIDKey: Int(kAudioFormatLinearPCM),
+                AVSampleRateKey: 44100,
+                AVNumberOfChannelsKey: 1,
+                AVLinearPCMBitDepthKey: 16,
+                AVLinearPCMIsFloatKey: false,
+                AVLinearPCMIsBigEndianKey: false,
+                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+            ]
+            
+            audioRecorder = try AVAudioRecorder(url: audioFilename, settings: settings)
+            audioRecorder?.record()
+            
+            isRecording = true
+            countdown = recordingDuration
+            
+            // Запускаем Live Activity для Dynamic Island
+            startLiveActivity()
+            
+            // Запускаем таймер для обратного отсчета
+            timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+                if countdown > 0 {
+                    countdown -= 0.1
+                    
+                    // Обновляем Live Activity
+                    updateLiveActivity()
+                } else {
+                    stopRecording()
+                }
+            }
+            
+        } catch {
+            print("Ошибка записи: \(error.localizedDescription)")
+        }
+    }
+    
+    private func stopRecording() {
+        audioRecorder?.stop()
+        isRecording = false
+        timer?.invalidate()
+        
+        // Останавливаем Live Activity
+        endLiveActivity()
+        
+        // Обработка записанного аудио для получения RIR
+        if let url = audioRecorder?.url {
+            processRecordedAudio(url: url)
+        }
+    }
+    
+    private func processRecordedAudio(url: URL) {
+        do {
+            let audioFile = try AVAudioFile(forReading: url)
+            let format = audioFile.processingFormat
+            let frameCount = UInt32(audioFile.length)
+            
+            guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+                print("Ошибка создания буфера")
+                return
+            }
+            
+            try audioFile.read(into: buffer)
+            
+            // Преобразуем аудиоданные в массив Float
+            var audioData: [Float] = []
+            
+            if let channelData = buffer.floatChannelData?[0] {
+                let channelDataPtr = UnsafeMutableBufferPointer(start: channelData, 
+                                                               count: Int(buffer.frameLength))
+                audioData = Array(channelDataPtr)
+            }
+            
+            // Нормализация данных
+            if let maxValue = audioData.max() {
+                if maxValue > 0 {
+                    for i in 0..<audioData.count {
+                        audioData[i] = audioData[i] / maxValue
+                    }
+                }
+            }
+            
+            // Обновляем привязанную переменную с данными RIR
+            DispatchQueue.main.async {
+                self.recordedData = audioData
+                self.presentationMode.wrappedValue.dismiss()
+            }
+            
+        } catch {
+            print("Ошибка обработки аудио: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Live Activity Methods
+    
+    private func startLiveActivity() {
+        if #available(iOS 16.1, *) {
+            let initialContentState = RIRRecordingAttributes.ContentState(
+                progress: 0,
+                remainingTime: recordingDuration
+            )
+            
+            let activityAttributes = RIRRecordingAttributes(recordingName: "Запись RIR")
+            
+            do {
+                activity = try Activity.request(
+                    attributes: activityAttributes,
+                    contentState: initialContentState,
+                    pushType: nil
+                )
+            } catch {
+                print("Error starting live activity: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    private func updateLiveActivity() {
+        if #available(iOS 16.1, *) {
+            let progress = 1.0 - (countdown / recordingDuration)
+            
+            let updatedContentState = RIRRecordingAttributes.ContentState(
+                progress: progress,
+                remainingTime: countdown
+            )
+            
+            Task {
+                await activity?.update(using: updatedContentState)
+            }
+        }
+    }
+    
+    private func endLiveActivity() {
+        if #available(iOS 16.1, *) {
+            Task {
+                await activity?.end(dismissalPolicy: .immediate)
+            }
         }
     }
 }
