@@ -25,36 +25,11 @@ enum UpdatesState {
 struct UpdatesView: View {
     @State private var updatesState: UpdatesState = .loading
     @State private var showUpdateDetails = false
-    @State private var automaticUpdates = true
-    @State private var betaUpdates = false
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationView {
             List {
-                // Настройки обновлений
-                Section {
-                    HStack {
-                        Text("Автоматические обновления")
-                        Spacer()
-                        Text(automaticUpdates ? "Вкл" : "Выкл")
-                            .foregroundColor(.secondary)
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
-                        Text("Бета-обновления")
-                        Spacer()
-                        Text(betaUpdates ? "Вкл" : "Выкл")
-                            .foregroundColor(.secondary)
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
                 // Содержимое обновления
                 switch updatesState {
                 case .loading:
@@ -394,8 +369,6 @@ struct UpdatesView_Previews: PreviewProvider {
 private struct UpdatesViewWithUpdate: View {
     @State private var updatesState: UpdatesState = .hasUpdates(sampleUpdateInfo)
     @State private var showUpdateDetails = false
-    @State private var automaticUpdates = true
-    @State private var betaUpdates = false
     
     var body: some View {
         NavigationView {
