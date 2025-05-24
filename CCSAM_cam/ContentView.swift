@@ -8,6 +8,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var bleManager: BLEManager
+    @StateObject private var settingsManager = SettingsManager()
     @State private var selectedTab = 0
     
     var body: some View {
@@ -42,6 +43,7 @@ struct ContentView: View {
                 }
                 .tag(4)
         }
+        .environmentObject(settingsManager)
         .onChange(of: selectedTab) { newValue in
             if newValue == 1 && !bleManager.isConnected {
                 selectedTab = 0

@@ -3,6 +3,8 @@ import CoreBluetooth
 
 struct DeviceConnectionView: View {
     @EnvironmentObject private var bleManager: BLEManager
+    @EnvironmentObject private var settingsManager: SettingsManager
+    @State private var showProfile = false
     
     var body: some View {
         NavigationView {
@@ -68,6 +70,21 @@ struct DeviceConnectionView: View {
                 Spacer()
             }
             .navigationTitle("Connect to Device")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showProfile = true
+                    } label: {
+                        Image(systemName: "person.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+                }
+            }
+            .sheet(isPresented: $showProfile) {
+                ProfileView()
+                    .environmentObject(settingsManager)
+            }
         }
     }
 }
@@ -93,6 +110,7 @@ struct DeviceRow: View {
         .padding(.vertical, 4)
     }
 }
+
 struct DeviceConnectionView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
@@ -102,6 +120,7 @@ struct DeviceConnectionView_Previews: PreviewProvider {
                                                status: "Searching for devices…",
                                                isConnected: false,
                                                devices: []))
+                .environmentObject(SettingsManager())
                 .previewDisplayName("Scanning…")
             
             // 2. Сценарий: сканирование остановлено, устройств нет
@@ -110,6 +129,7 @@ struct DeviceConnectionView_Previews: PreviewProvider {
                                                status: "No devices found",
                                                isConnected: false,
                                                devices: []))
+                .environmentObject(SettingsManager())
                 .previewDisplayName("No Devices")
         }
         .previewDevice("iPhone 14 Pro")
