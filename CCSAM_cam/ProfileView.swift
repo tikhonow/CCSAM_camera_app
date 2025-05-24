@@ -6,6 +6,7 @@ struct ProfileView: View {
     @State private var showSettings = false
     @State private var showAbout = false
     @State private var showSupport = false
+    @State private var showUpdatesView = false
     
     var body: some View {
         NavigationView {
@@ -47,6 +48,18 @@ struct ProfileView: View {
                     .buttonStyle(PlainButtonStyle())
                     
                     Button {
+                        showUpdatesView = true
+                    } label: {
+                        ProfileRowView(
+                            icon: "arrow.down.circle",
+                            title: "Обновления",
+                            subtitle: "Проверить наличие обновлений приложения",
+                            color: .purple
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button {
                         showAbout = true
                     } label: {
                         ProfileRowView(
@@ -76,7 +89,7 @@ struct ProfileView: View {
                     HStack {
                         Text("Версия приложения")
                         Spacer()
-                        Text("1.0.0")
+                        Text(AppConstants.appVersion)
                             .foregroundColor(.secondary)
                     }
                     
@@ -102,6 +115,9 @@ struct ProfileView: View {
             .sheet(isPresented: $showSettings) {
                 SettingsView()
                     .environmentObject(settingsManager)
+            }
+            .sheet(isPresented: $showUpdatesView) {
+                UpdatesView()
             }
             .sheet(isPresented: $showAbout) {
                 AboutView()

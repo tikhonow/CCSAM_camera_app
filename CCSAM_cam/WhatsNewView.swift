@@ -3,6 +3,7 @@ import SwiftUI
 struct WhatsNewView: View {
     @Binding var isPresented: Bool
     @Environment(\.colorScheme) var colorScheme
+    @State private var showLicense = false
     
     var body: some View {
         ZStack {
@@ -69,9 +70,13 @@ struct WhatsNewView: View {
                             .multilineTextAlignment(.leading)
                             .foregroundColor(.secondary)
                         
-                        Text("Подробнее о конфиденциальности...")
-                            .font(.caption)
-                            .foregroundColor(.blue)
+                        Button {
+                            showLicense = true
+                        } label: {
+                            Text("Подробнее о конфиденциальности...")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
                     }
                 }
                 .padding(.horizontal)
@@ -93,6 +98,9 @@ struct WhatsNewView: View {
                 .padding(.bottom, 30)
             }
             .padding(.horizontal)
+        }
+        .sheet(isPresented: $showLicense) {
+            LicenseView()
         }
     }
     
